@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>施設日報アプリ</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f7;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #333;
+        }
+        input[type="text"],
+        input[type="date"],
+        input[type="number"],
+        input[type="email"],
+        input[type="month"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        .inline-input {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .inline-input label {
+            margin-bottom: 0;
+            min-width: 100px;
+        }
+        .checkbox-group {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .checkbox-label {
+            display: flex;
+            align-items: center;
+            font-weight: normal;
+        }
+        .checkbox-label input[type="checkbox"] {
+            margin-right: 8px;
+            width: 18px;
+            height: 18px;
+        }
+        .required-label::after {
+            content: " *";
+            color: red;
+        }
+        .optional-label {
+            color: #666;
+            font-weight: normal;
+            font-size: 14px;
+            margin-left: 5px;
+        }
+        .btn {
+            display: inline-block;
+            background-color: #0071e3;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .btn:hover {
+            background-color: #0058a8;
+        }
+        .btn-secondary {
+            background-color: #6e6e73;
+        }
+        .btn-secondary:hover {
+            background-color: #555;
+        }
+        .buttons {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 30px;
+            gap: 15px;
+        }
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 1px solid #ddd;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 3px solid transparent;
+        }
+        .tab.active {
+            border-bottom: 3px solid #0071e3;
+            font-weight: bold;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 12px;
+            text-align: left;
+        }
+        th {
+            background-color: #f5f5f7;
+            font-weight: bold;
+        }
+        tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .status-bar {
+            background-color: #f0f0f0;
+            padding: 8px 12px;
+            margin-top: 15px;
+            border-radius: 4px;
+            font-size: 14px;
+            color: #333;
+        }
+        @media print {
+            body {
+                background: white;
+                padding: 0;
+            }
+            .container {
+                box-shadow: none;
+                max-width: 100%;
+            }
+            .no-print {
+                display: none !important;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>施設日報アプリ</h1>
+        
+        <div class="tabs no-print">
+            <div class="tab active" onclick="switchTab('daily-input')">日報入力</div>
+            <div class="tab" onclick="switchTab('monthly-report')">月間レポート</div>
+        </div>
+        
+        <!-- 日報入力タブ -->
+        <div class="tab-content active" id="daily-input">
+            <form id="dailyReportForm">
+                <div class="form-group">
+                    <label for="date" class="required-label">①年月日</label>
+                    <input type="date" id="date" name="date" required>
+                </div>
+                
+                <div class="form-group">
+                    <label for="weather" class="required-label">②天候</label>
+                    <select id="weather" name="weather" required>
+                        <option value="">選択してください</option>
+                        <option value="sunny">晴れ</option>
+                        <option value="cloudy">曇り</option>
+                        <option value="rainy">雨</option>
+                        <option value="snowy">雪</option>
+                        <option value="partlyCloudy">晴れ時々曇り</option>
+                        <option value="partlyRainy">晴れ時々雨</option>
+                    </select>
+                </div>
+                
+                <div class="form-group">
+                    <label for="parkingCount" class="required-label">③来館者数</label>
+                    <div class="inline-input">
+                        <label for="parkingCount">駐車場台数:</label>
+                        <input type="number" id="parkingCount" name="parkingCount" min="0" onchange="calculateVisitors()">
+                    </div>
+                    <div class="inline-input">
+                        <label for="isHoliday">休祝日:</label>
+                        <input type="checkbox" id="isHoliday" name="isHoliday" onchange="calculateVisitors()">
+                    </div>
+                    <div class="inline-input">
+                        <label for="visitorCount">来館者数:</label>
+                        <input type="number" id="visitorCount" name="visitorCount" min="0" required>
+                        <small>（自動計算されますが、調整可能です）</small>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label class="required-label">④施設管理チェック項目</label>
+                    <div>
+                        <p><strong>必須項目:</strong></p>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="managementCheck" value="館内清掃" required> 館内清掃
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="managementCheck" value="トイレ掃除" required> トイレ掃除
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="managementCheck" value="事務" required> 事務
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="managementCheck" value="来館案内" required> 来館案内
+                            </label>
+                        </div>
+                        
+                        <p><strong>任意項目:</strong> <span class="optional-label">（該当する作業があれば選択）</span></p>
+                        <div class="checkbox-group">
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="optionalCheck" value="草刈"> 草刈
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="optionalCheck" value="剪定"> 剪定
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="optionalCheck" value="草引き"> 草引き
+                            </label>
+                            <label class="checkbox-label">
+                                <input type="checkbox" name="optionalCheck" value="落ち葉掃除"> 落ち葉掃除
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label for="eventDetails">⑤自主事業（内容・参加人数）</label>
+                    <div class="event-container">
+                        <div class="inline-input">
+                            <input type="text" placeholder="事業内容" name="eventName">
+                            <input type="number" placeholder="参加人数" name="eventAttendees" min="0">
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-secondary" id="addEventBtn" style="margin-top: 10px; padding: 8px 16px;">イベント追加</button>
+                </div>
+                
+                <div class="form-group">
+                    <label for="groupDetails">⑥団体（名称・人数）</label>
+                    <div class="group-container">
+                        <div class="inline-input">
+                            <input type="text" placeholder="団体名称" name="groupName">
+                            <input type="number" placeholder="人数" name="groupAttendees" min="0">
+                        </div>
+                    </div>
+                    <button type="button" class="btn btn-secondary" id="addGroupBtn" style="margin-top: 10px; padding: 8px 16px;">団体追加</button>
+                </div>
+                
+                <div class="form-group">
+                    <label for="notes">⑦その他（修繕・特記事項）</label>
+                    <textarea id="notes" name="notes" rows="4"></textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label for="manager" class="required-label">⑧当日管理者</label>
+                    <input type="text" id="manager" name="manager" required>
+                </div>
+                
+                <div class="buttons">
+                    <button type="submit" class="btn">保存</button>
+                    <button type="reset" class="btn btn-secondary">リセット</button>
+                    <button type="button" class="btn btn-secondary" id="exportDataBtn">データエクスポート</button>
+                    <button type="button" class="btn btn-secondary" id="importDataBtn">データインポート</button>
+                </div>
+                
+                <div class="status-bar" id="statusBar"></div>
+                
+                <!-- インポートダイアログ -->
+                <div id="importDialog" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); z-index: 1000;">
+                    <div style="background: white; width: 80%; max-width: 500px; margin: 100px auto; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.2);">
+                        <h3>データインポート</h3>
+                        <p>JSONファイルからデータをインポートします。現在のデータは上書きされます。</p>
+                        <input type="file" id="fileInput" accept=".json" style="margin: 10px 0;">
+                        <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 15px;">
+                            <button type="button" class="btn btn-secondary" id="cancelImportBtn">キャンセル</button>
+                            <button type="button" class="btn" id="confirmImportBtn">インポート</button>
+                        </div>
+                    </div>
+                </div>
+            </form>
+        </div>
+        
+        <!-- 月間レポートタブ -->
+        <div class="tab-content" id="monthly-report">
+            <div class="form-group">
+                <label for="reportYear">年月を選択:</label>
+                <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
+                    <select id="reportYear" style="flex: 1;">
+                        <option value="2024">2024年</option>
+                        <option value="2025" selected>2025年</option>
+                        <option value="2026">2026年</option>
+                        <option value="2027">2027年</option>
+                        <option value="2028">2028年</option>
+                        <option value="2029">2029年</option>
+                        <option value="2030">2030年</option>
+                    </select>
+                    <select id="reportMonth" style="flex: 1;">
+                        <option value="01">1月</option>
+                        <option value="02">2月</option>
+                        <option value="03">3月</option>
+                        <option value="04" selected>4月</option>
+                        <option value="05">5月</option>
+                        <option value="06">6月</option>
+                        <option value="07">7月</option>
+                        <option value="08">8月</option>
+                        <option value="09">9月</option>
+                        <option value="10">10月</option>
+                        <option value="11">11月</option>
+                        <option value="12">12月</option>
+                    </select>
+                </div>
+                <button type="button" class="btn" id="loadReportBtn">レポート読み込み</button>
+                <button type="button" class="btn btn-secondary" id="clearStorageBtn" style="margin-left: 10px;">すべてのデータを削除</button>
+            </div>
+            
+            <div id="reportContainer">
+                <h2 id="reportTitle"></h2>
+                <table id="reportTable">
+                    <thead>
+                        <tr>
+                            <th>日付</th>
+                            <th>天候</th>
+                            <th>駐車場台数</th>
+                            <th>来館者数</th>
+                            <th>管理項目</th>
+                            <th>自主事業</th>
+                            <th>団体</th>
+                            <th>その他</th>
+                            <th>管理者</th>
+                        </tr>
+                    </thead>
+                    <tbody id="reportBody">
+                        <!-- レポートデータがここに入ります -->
+                    </tbody>
+                    <tfoot id="reportFooter">
+                        <tr>
+                            <td colspan="2">合計</td>
+                            <td id="totalParking">0</td>
+                            <td id="totalVisitors">0</td>
+                            <td colspan="5"></td>
+                        </tr>
+                    </tfoot>
+                </table>
+                
+                <div class="buttons">
+                    <button type="button" class="btn" id="printReportBtn">印刷</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // LocalStorage用のデータアクセスレイヤー
+        const storageManager = {
+            storageKey: 'facilityDailyReports',
+            
+            // データを保存
+            saveData: function(data) {
+                try {
+                    localStorage.setItem(this.storageKey, JSON.stringify(data));
+                    return true;
+                } catch (error) {
+                    console.error('データ保存エラー:', error);
+                    return false;
+                }
+            },
+            
+            // データを読み込み
+            loadData: function() {
+                try {
+                    const data = localStorage.getItem(this.storageKey);
+                    return data ? JSON.parse(data) : { dailyReports: {}, settings: {} };
+                } catch (error) {
+                    console.error('データ読み込みエラー:', error);
+                    return { dailyReports: {}, settings: {} };
+                }
+            },
+            
+            // データを削除
+            clearData: function() {
+                try {
+                    localStorage.removeItem(this.storageKey);
+                    return true;
+                } catch (error) {
+                    console.error('データ削除エラー:', error);
+                    return false;
+                }
+            }
+        };
+        
+        // グローバル変数としてデータを保持
+        var appData = {
+            dailyReports: {},
+            settings: {
+                notificationEmail: '',
+                enableNotification: true
+            }
+        };
+        
+        // タブ切り替え機能
+        function switchTab(tabId) {
+            // アクティブタブを更新
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            event.currentTarget.classList.add('active');
+            
+            // アクティブコンテンツを更新
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            document.getElementById(tabId).classList.add('active');
+        }
+        
+        // 駐車場台数から来館者数を計算
+        function calculateVisitors() {
+            const parkingCount = parseInt(document.getElementById('parkingCount').value) || 0;
+            const isHoliday = document.getElementById('isHoliday').checked;
+            
+            let multiplier = isHoliday ? 2.3 : 1.3;
+            let visitorCount = Math.round(parkingCount * multiplier);
+            
+            document.getElementById('visitorCount').value = visitorCount;
+        }
+        
+        // ステータスバーの更新
+        function updateStatusBar(message, isError = false) {
+            const statusBar = document.getElementById('statusBar');
+            statusBar.textContent = message;
+            statusBar.style.backgroundColor = isError ? '#ffdddd' : '#e8f5e9';
+            statusBar.style.color = isError ? '#d32f2f' : '#2e7d32';
+            
+            // 3秒後に消える
+            setTimeout(() => {
+                statusBar.textContent = '';
+                statusBar.style.backgroundColor = '#f0f0f0';
+            }, 3000);
+        }
+        
+        // 初期設定の読み込み
+        window.onload = function() {
+            try {
+                // LocalStorageからデータを読み込み
+                appData = storageManager.loadData();
+                
+                // 今日の日付をデフォルトセット
+                const today = new Date();
+                const yyyy = today.getFullYear();
+                const mm = String(today.getMonth() + 1).padStart(2, '0');
+                const dd = String(today.getDate()).padStart(2, '0');
+                
+                document.getElementById('date').value = `${yyyy}-${mm}-${dd}`;
+                
+                // サンプルデータは初回のみ設定
+                if (Object.keys(appData.dailyReports).length === 0) {
+                    setupSampleData();
+                    storageManager.saveData(appData);
+                }
+                
+                // イベントリスナーの設定
+                setupEventListeners();
+                
+                console.log('アプリケーションの初期化が完了しました');
+                updateStatusBar('データを読み込みました');
+            } catch (error) {
+                console.error('初期化エラー:', error);
+                updateStatusBar('初期化エラーが発生しました', true);
+            }
+        };
+        
+        // サンプルデータのセットアップ（デモ用）
+        function setupSampleData() {
+            const today = new Date();
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+            
+            const todayStr = today.toISOString().split('T')[0];
+            const yesterdayStr = yesterday.toISOString().split('T')[0];
+            
+            // サンプルデータ
+            appData.dailyReports[yesterdayStr] = {
+                date: yesterdayStr,
+                weather: 'sunny',
+                parkingCount: 15,
+                isHoliday: false,
+                visitorCount: 20,
+                managementCheck: ['館内清掃', 'トイレ掃除', '事務', '来館案内'],
+                optionalCheck: ['草刈'],
+                events: [
+                    { name: '絵画教室', attendees: 12 }
+                ],
+                groups: [],
+                notes: '特になし',
+                manager: '山田太郎',
+                timestamp: yesterday.toISOString()
+            };
+        }
+        
+        // イベントリスナー設定
+        function setupEventListeners() {
+            // イベント追加ボタン
+            document.getElementById('addEventBtn').addEventListener('click', function() {
+                const container = document.querySelector('.event-container');
+                const newEvent = document.createElement('div');
+                newEvent.className = 'inline-input';
+                newEvent.innerHTML = `
+                    <input type="text" placeholder="事業内容" name="eventName">
+                    <input type="number" placeholder="参加人数" name="eventAttendees" min="0">
+                    <button type="button" class="remove-btn" style="position: relative;">✕</button>
+                `;
+                
+                container.appendChild(newEvent);
+                
+                // 削除ボタンのイベントリスナー
+                newEvent.querySelector('.remove-btn').addEventListener('click', function() {
+                    container.removeChild(newEvent);
+                });
+            });
+            
+            // 団体追加ボタン
+            document.getElementById('addGroupBtn').addEventListener('click', function() {
+                const container = document.querySelector('.group-container');
+                const newGroup = document.createElement('div');
+                newGroup.className = 'inline-input';
+                newGroup.innerHTML = `
+                    <input type="text" placeholder="団体名称" name="groupName">
+                    <input type="number" placeholder="人数" name="groupAttendees" min="0">
+                    <button type="button" class="remove-btn" style="position: relative;">✕</button>
+                `;
+                
+                container.appendChild(newGroup);
+                
+                // 削除ボタンのイベントリスナー
+                newGroup.querySelector('.remove-btn').addEventListener('click', function() {
+                    container.removeChild(newGroup);
+                });
+            });
+            
+            // 日報フォーム送信処理
+            document.getElementById('dailyReportForm').addEventListener('submit', function(e) {
+                e.preventDefault();
+                
+                try {
+                    // 必須チェックボックスの検証
+                    const requiredCheckboxes = document.querySelectorAll('input[name="managementCheck"]:checked');
+                    if (requiredCheckboxes.length === 0) {
+                        alert('必須の施設管理チェック項目を少なくとも1つ選択してください。');
+                        return;
+                    }
+                    
+                    // フォームデータ収集
+                    const date = document.getElementById('date').value;
+                    const weather = document.getElementById('weather').value;
+                    const parkingCount = parseInt(document.getElementById('parkingCount').value) || 0;
+                    const isHoliday = document.getElementById('isHoliday').checked;
+                    const visitorCount = parseInt(document.getElementById('visitorCount').value) || 0;
+                    const manager = document.getElementById('manager').value;
+                    const notes = document.getElementById('notes').value;
+                    
+                    // チェックボックスの値を取得
+                    const managementChecks = [];
+document.querySelectorAll('input[name="managementCheck"]:checked').forEach(function(checkbox) {
+    managementChecks.push(checkbox.value);
+});
+
+const optionalChecks = [];
+document.querySelectorAll('input[name="optionalCheck"]:checked').forEach(function(checkbox) {
+    optionalChecks.push(checkbox.value);
+});// イベントデータ収集
+                    const events = [];
+                    const eventNames = document.querySelectorAll('input[name="eventName"]');
+                    const eventAttendees = document.querySelectorAll('input[name="eventAttendees"]');
+                    
+                    for (let i = 0; i < eventNames.length; i++) {
+                        if (eventNames[i].value.trim() !== '') {
+                            events.push({
+                                name: eventNames[i].value,
+                                attendees: parseInt(eventAttendees[i].value) || 0
+                            });
+                        }
+                    }
+                    
+                    // 団体データ収集
+                    const groups = [];
+                    const groupNames = document.querySelectorAll('input[name="groupName"]');
+                    const groupAttendees = document.querySelectorAll('input[name="groupAttendees"]');
+                    
+                    for (let i = 0; i < groupNames.length; i++) {
+                        if (groupNames[i].value.trim() !== '') {
+                            groups.push({
+                                name: groupNames[i].value,
+                                attendees: parseInt(groupAttendees[i].value) || 0
+                            });
+                        }
+                    }
+                    
+                    // 日報データをオブジェクトにまとめる
+                    const reportData = {
+                        date: date,
+                        weather: weather,
+                        parkingCount: parkingCount,
+                        isHoliday: isHoliday,
+                        visitorCount: visitorCount,
+                        managementCheck: managementChecks,
+                        optionalCheck: optionalChecks,
+                        events: events,
+                        groups: groups,
+                        notes: notes,
+                        manager: manager,
+                        timestamp: new Date().toISOString()
+                    };
+                    
+                    // グローバル変数に保存
+                    appData.dailyReports[date] = reportData;
+                    
+                    // LocalStorageに保存
+                    if (storageManager.saveData(appData)) {
+                        console.log('日報データを保存しました:', date);
+                        updateStatusBar('日報が保存されました');
+                    } else {
+                        updateStatusBar('データの保存に失敗しました', true);
+                    }
+                    
+                    // フォームをリセット
+                    this.reset();
+                    
+                    // イベントと団体の入力欄をリセット
+                    document.querySelector('.event-container').innerHTML = `
+                        <div class="inline-input">
+                            <input type="text" placeholder="事業内容" name="eventName">
+                            <input type="number" placeholder="参加人数" name="eventAttendees" min="0">
+                        </div>
+                    `;
+                    
+                    document.querySelector('.group-container').innerHTML = `
+                        <div class="inline-input">
+                            <input type="text" placeholder="団体名称" name="groupName">
+                            <input type="number" placeholder="人数" name="groupAttendees" min="0">
+                        </div>
+                    `;
+                    
+                    // 今日の日付を再設定
+                    const today = new Date();
+                    const yyyy = today.getFullYear();
+                    const mm = String(today.getMonth() + 1).padStart(2, '0');
+                    const dd = String(today.getDate()).padStart(2, '0');
+                    
+                    document.getElementById('date').value = `${yyyy}-${mm}-${dd}`;
+                    
+                } catch (error) {
+                    console.error('フォーム送信中にエラーが発生しました:', error);
+                    updateStatusBar('エラーが発生しました: ' + error.message, true);
+                }
+            });
+            
+            // 月間レポート読み込み処理
+            document.getElementById('loadReportBtn').addEventListener('click', function() {
+                try {
+                    const year = document.getElementById('reportYear').value;
+                    const month = document.getElementById('reportMonth').value;
+                    
+                    if (!year || !month) {
+                        alert('年と月を選択してください');
+                        return;
+                    }
+                    
+                    // 選択した月のレポートをフィルタリング
+                    const monthlyReports = Object.values(appData.dailyReports).filter(report => {
+                        return report.date.startsWith(`${year}-${month}`);
+                    }).sort((a, b) => a.date.localeCompare(b.date));
+                    
+                    const reportBody = document.getElementById('reportBody');
+                    reportBody.innerHTML = '';
+                    
+                    let totalVisitors = 0;
+                    let totalParking = 0;
+                    
+                    if (monthlyReports.length === 0) {
+                        reportBody.innerHTML = '<tr><td colspan="9" style="text-align:center;">この月のレポートデータはありません</td></tr>';
+                    } else {
+                        monthlyReports.forEach(report => {
+                            const row = document.createElement('tr');
+                            
+                            // 日付
+                            const dateCell = document.createElement('td');
+                            const reportDate = new Date(report.date);
+                            dateCell.textContent = `${reportDate.getMonth() + 1}/${reportDate.getDate()}`;
+                            row.appendChild(dateCell);
+                            
+                            // 天候
+                            const weatherCell = document.createElement('td');
+                            const weatherMap = {
+                                'sunny': '晴れ',
+                                'cloudy': '曇り',
+                                'rainy': '雨',
+                                'snowy': '雪',
+                                'partlyCloudy': '晴れ時々曇り',
+                                'partlyRainy': '晴れ時々雨'
+                            };
+                            weatherCell.textContent = weatherMap[report.weather] || report.weather;
+                            row.appendChild(weatherCell);
+                            
+                            // 駐車場台数
+                            const parkingCell = document.createElement('td');
+                            parkingCell.textContent = report.parkingCount;
+                            totalParking += report.parkingCount;
+                            row.appendChild(parkingCell);
+                            
+                            // 来館者数
+                            const visitorCell = document.createElement('td');
+                            visitorCell.textContent = report.visitorCount;
+                            totalVisitors += report.visitorCount;
+                            row.appendChild(visitorCell);
+                            
+                            // 管理項目
+                            const managementCell = document.createElement('td');
+                            managementCell.textContent = [
+                                ...report.managementCheck,
+                                ...report.optionalCheck
+                            ].join(', ');
+                            row.appendChild(managementCell);
+                            
+                            // 自主事業
+                            const eventsCell = document.createElement('td');
+                            eventsCell.textContent = report.events.map(event => 
+                                `${event.name} (${event.attendees}名)`
+                            ).join(', ');
+                            row.appendChild(eventsCell);
+                            
+                            // 団体
+                            const groupsCell = document.createElement('td');
+                            if (report.groups) {
+                                groupsCell.textContent = report.groups.map(group => 
+                                    `${group.name} (${group.attendees}名)`
+                                ).join(', ');
+                            } else {
+                                groupsCell.textContent = '';
+                            }
+                            row.appendChild(groupsCell);
+                            
+                            // その他
+                            const notesCell = document.createElement('td');
+                            notesCell.textContent = report.notes;
+                            row.appendChild(notesCell);
+                            
+                            // 管理者
+                            const managerCell = document.createElement('td');
+                            managerCell.textContent = report.manager;
+                            row.appendChild(managerCell);
+                            
+                            reportBody.appendChild(row);
+                        });
+                    }
+                    
+                    // 合計を更新
+                    document.getElementById('totalVisitors').textContent = totalVisitors;
+                    document.getElementById('totalParking').textContent = totalParking;
+                    
+                    // レポートタイトルを設定
+                    document.getElementById('reportTitle').textContent = `${year}年${month}月 月間レポート`;
+                    
+                    updateStatusBar('レポートを読み込みました');
+                } catch (error) {
+                    console.error('レポート読み込み中にエラーが発生しました:', error);
+                    updateStatusBar('レポート読み込みエラー: ' + error.message, true);
+                }
+            });
+            
+            // データをエクスポート
+            document.getElementById('exportDataBtn').addEventListener('click', function() {
+                try {
+                    const dataStr = JSON.stringify(appData, null, 2);
+                    const dataBlob = new Blob([dataStr], {type: 'application/json'});
+                    const url = URL.createObjectURL(dataBlob);
+                    
+                    const today = new Date();
+                    const timestamp = today.toISOString().split('T')[0];
+                    
+                    const a = document.createElement('a');
+                    a.href = url;
+                    a.download = `施設日報データ_${timestamp}.json`;
+                    document.body.appendChild(a);
+                    a.click();
+                    document.body.removeChild(a);
+                    
+                    URL.revokeObjectURL(url);
+                    updateStatusBar('データをエクスポートしました');
+                } catch (error) {
+                    console.error('データエクスポートエラー:', error);
+                    updateStatusBar('データエクスポートエラー: ' + error.message, true);
+                }
+            });
+            
+            // データインポートボタン
+            document.getElementById('importDataBtn').addEventListener('click', function() {
+                document.getElementById('importDialog').style.display = 'block';
+            });
+            
+            // インポートキャンセルボタン
+            document.getElementById('cancelImportBtn').addEventListener('click', function() {
+                document.getElementById('importDialog').style.display = 'none';
+                document.getElementById('fileInput').value = '';
+            });
+            
+            // インポート確認ボタン
+            document.getElementById('confirmImportBtn').addEventListener('click', function() {
+                const fileInput = document.getElementById('fileInput');
+                const file = fileInput.files[0];
+                
+                if (!file) {
+                    alert('ファイルを選択してください');
+                    return;
+                }
+                
+                const reader = new FileReader();
+                
+                reader.onload = function(event) {
+                    try {
+                        const importedData = JSON.parse(event.target.result);
+                        
+                        // データ構造の簡易検証
+                        if (!importedData.dailyReports) {
+                            throw new Error('無効なデータ形式です。正しい施設日報データではありません。');
+                        }
+                        
+                        // データをインポート
+                        appData = importedData;
+                        
+                        // LocalStorageに保存
+                        if (storageManager.saveData(appData)) {
+                            updateStatusBar('データをインポートしました');
+                            
+                            // ダイアログを閉じる
+                            document.getElementById('importDialog').style.display = 'none';
+                            fileInput.value = '';
+                        } else {
+                            updateStatusBar('データのインポートに失敗しました', true);
+                        }
+                    } catch (error) {
+                        console.error('インポートエラー:', error);
+                        alert('ファイルの読み込みに失敗しました: ' + error.message);
+                    }
+                };
+                
+                reader.onerror = function() {
+                    alert('ファイルの読み込みに失敗しました');
+                };
+                
+                reader.readAsText(file);
+            });
+            
+            // すべてのデータを削除
+            document.getElementById('clearStorageBtn').addEventListener('click', function() {
+                if (confirm('すべての保存データを削除しますか？この操作は元に戻せません。')) {
+                    if (storageManager.clearData()) {
+                        appData = { dailyReports: {}, settings: {} };
+                        updateStatusBar('すべてのデータを削除しました');
+                        
+                        // 月間レポートをクリア
+                        document.getElementById('reportBody').innerHTML = '';
+                        document.getElementById('totalVisitors').textContent = '0';
+                        document.getElementById('totalParking').textContent = '0';
+                        document.getElementById('reportTitle').textContent = '';
+                    } else {
+                        updateStatusBar('データの削除に失敗しました', true);
+                    }
+                }
+            });
+            
+            // 印刷機能
+            document.getElementById('printReportBtn').addEventListener('click', function() {
+                window.print();
+            });
+        }
+
+        // LocalStorageの利用可能チェック
+        function checkLocalStorageAvailability() {
+            try {
+                const test = '__storage_test__';
+                localStorage.setItem(test, test);
+                localStorage.removeItem(test);
+                return true;
+            } catch (e) {
+                return false;
+            }
+        }
+        
+        // 起動時にLocalStorageの利用可能性をチェック
+        if (!checkLocalStorageAvailability()) {
+            alert('ローカルストレージが利用できないため、データは保存されません。ブラウザの設定を確認してください。');
+            document.getElementById('statusBar').textContent = 'ローカルストレージが利用できません。データは保存されません。';
+            document.getElementById('statusBar').style.backgroundColor = '#ffdddd';
+            document.getElementById('statusBar').style.color = '#d32f2f';
+        }
+    </script>
+</body>
+</html>
+                        managementChecks.push(checkbox.value);
+                    });
+                    
+                    const optionalChecks = [];
+                    document.querySelectorAll('input[name="optionalCheck
