@@ -1,0 +1,1259 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>施設日報アプリ</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: #f5f5f5;
+            color: #333;
+        }
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid #ddd;
+            margin-bottom: 20px;
+        }
+        .tab {
+            padding: 10px 20px;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            margin-right: 5px;
+            color: #666;
+        }
+        .tab.active {
+            color: #007bff;
+            border-bottom: 2px solid #007bff;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+        input[type="text"], 
+        input[type="date"], 
+        input[type="number"],
+        select, 
+        textarea {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            box-sizing: border-box;
+        }
+        input[type="number"] {
+            width: 100%;
+        }
+        .event-input, .group-input {
+            display: flex;
+            margin-bottom: 10px;
+        }
+        .event-input input, .group-input input {
+            margin-right: 10px;
+        }
+        .event-input input:last-child, .group-input input:last-child {
+            width: 100px;
+        }
+        .required {
+            color: red;
+            margin-left: 2px;
+        }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .error-message {
+            color: red;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f8d7da;
+            border-radius: 4px;
+        }
+        .success-message {
+            color: green;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #d4edda;
+            border-radius: 4px;
+        }
+        .check-items {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .checkbox-item {
+            display: flex;
+            align-items: center;
+        }
+        .checkbox-item input {
+            margin-right: 5px;
+        }
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        .report-table th, .report-table td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        .report-table th {
+            background-color: #f2f2f2;
+        }
+        .report-table tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+        .report-controls {
+            margin-bottom: 20px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .report-controls select {
+            width: auto;
+            margin-right: 10px;
+        }
+        .report-actions {
+            margin-top: 20px;
+            display: flex;
+            gap: 10px;
+        }
+        .report-actions button {
+            margin-right: 10px;
+        }
+        .calculator-test {
+            margin-top: 40px;
+            padding-top: 20px;
+            border-top: 1px solid #ddd;
+        }
+        .test-controls {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .test-controls input[type="number"] {
+            width: 150px;
+        }
+        .test-result {
+            background-color: #f8f9fa;
+            padding: 10px 15px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .summary-section {
+            margin-top: 30px;
+            padding: 15px;
+            background-color: #f8f9fa;
+            border-radius: 4px;
+        }
+        .summary-boxes {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+        }
+        .summary-box {
+            flex: 1;
+            padding: 15px;
+            background-color: white;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        .validation-error {
+            border-color: red !important;
+        }
+        .checkbox-error {
+            color: red;
+            font-weight: bold;
+        }
+        .text-center {
+            text-align: center;
+        }
+        @media (max-width: 768px) {
+            .check-items {
+                grid-template-columns: 1fr;
+            }
+            .summary-boxes {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>施設日報アプリ</h1>
+        
+        <div class="tabs">
+            <div class="tab active" data-tab="tab-daily">日報入力</div>
+            <div class="tab" data-tab="tab-monthly">月間レポート</div>
+            <div class="tab" data-tab="tab-settings">設定</div>
+        </div>
+        
+        <!-- 日報入力タブ -->
+        <div class="tab-content active" id="tab-daily">
+            <div class="form-group">
+                <label>①年月日 <span class="required">*</span></label>
+                <input type="date" id="date" required>
+                <div id="date-error" class="error-message" style="display: none;">年月日を入力してください</div>
+            </div>
+            
+            <div class="form-group">
+                <label>②天候 <span class="required">*</span></label>
+                <select id="weather" required>
+                    <option value="">選択してください</option>
+                    <option value="晴れ">晴れ</option>
+                    <option value="曇り">曇り</option>
+                    <option value="雨">雨</option>
+                    <option value="雪">雪</option>
+                    <option value="晴れ時々曇り">晴れ時々曇り</option>
+                    <option value="晴れ時々雨">晴れ時々雨</option>
+                </select>
+                <div id="weather-error" class="error-message" style="display: none;">天候を選択してください</div>
+            </div>
+            
+            <div class="form-group">
+                <label>③来館者数 <span class="required">*</span></label>
+                <div>
+                    <label>駐車場台数:</label>
+                    <input type="number" id="parking" min="0">
+                </div>
+                <div style="margin-top: 10px;">
+                    <label style="display: inline-flex; align-items: center;">
+                        <input type="checkbox" id="holiday"> 休祝日
+                    </label>
+                </div>
+                <div style="margin-top: 10px;">
+                    <label>来館者数:</label>
+                    <input type="number" id="visitors" min="0">
+                    <div style="margin-top: 5px; font-size: 0.85em; color: #666;">
+                        （自動計算されますが、調整可能です）
+                    </div>
+                </div>
+                <div id="visitors-error" class="error-message" style="display: none;">来館者数を入力してください</div>
+            </div>
+            
+            <div class="form-group">
+                <label>④施設管理チェック項目 <span class="required">*</span></label>
+                <div>必須項目:</div>
+                <div class="check-items">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="clean-indoor" name="management" value="館内清掃">
+                        <label for="clean-indoor">館内清掃</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="clean-toilet" name="management" value="トイレ掃除">
+                        <label for="clean-toilet">トイレ掃除</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="office-work" name="management" value="事務">
+                        <label for="office-work">事務</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="visitor-guide" name="management" value="来館案内">
+                        <label for="visitor-guide">来館案内</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="aed" name="management" value="AED">
+                        <label for="aed">AED</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="equipment" name="management" value="設備機器">
+                        <label for="equipment">設備機器</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="fire-emergency" name="management" value="消火器・誘導灯">
+                        <label for="fire-emergency">消火器・誘導灯</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="exhibits" name="management" value="展示資料">
+                        <label for="exhibits">展示資料</label>
+                    </div>
+                </div>
+                <div id="management-error" class="error-message" style="display: none;">すべての施設管理チェック項目にチェックを入れてください</div>
+                
+                <div style="margin-top: 15px;">任意項目: （該当する作業があれば選択）</div>
+                <div class="check-items">
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="grass-cutting" name="optional" value="草刈">
+                        <label for="grass-cutting">草刈</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="pruning" name="optional" value="剪定">
+                        <label for="pruning">剪定</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="weeding" name="optional" value="草引き">
+                        <label for="weeding">草引き</label>
+                    </div>
+                    <div class="checkbox-item">
+                        <input type="checkbox" id="leaf-cleaning" name="optional" value="落ち葉掃除">
+                        <label for="leaf-cleaning">落ち葉掃除</label>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>⑤自主事業（内容・参加人数）</label>
+                <div id="events-container">
+                    <div class="event-input">
+                        <input type="text" placeholder="事業内容" class="event-title">
+                        <input type="number" placeholder="参加人数" class="event-participants" min="0" style="width: 120px;">
+                        <button type="button" class="add-event">イベント追加</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>⑥団体（名称・人数）</label>
+                <div id="groups-container">
+                    <div class="group-input">
+                        <input type="text" placeholder="団体名称" class="group-name">
+                        <input type="number" placeholder="人数" class="group-count" min="0" style="width: 120px;">
+                        <button type="button" class="add-group">団体追加</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>⑦その他（修繕・特記事項）</label>
+                <textarea id="notes" rows="5"></textarea>
+            </div>
+            
+            <div class="form-group">
+                <label>⑧当日管理者 <span class="required">*</span></label>
+                <input type="text" id="manager" required>
+                <div id="manager-error" class="error-message" style="display: none;">当日管理者を入力してください</div>
+            </div>
+            
+            <div class="text-center">
+                <button type="button" id="save-daily">保存</button>
+            </div>
+            
+            <div id="error-message" class="error-message" style="display: none;"></div>
+            <div id="success-message" class="success-message" style="display: none;"></div>
+        </div>
+        
+        <!-- 月間レポートタブ -->
+        <div class="tab-content" id="tab-monthly">
+            <div class="report-controls">
+                <div>
+                    <label>表示する年度を選択:</label>
+                    <select id="year-select">
+                        <option value="2024">2024年度</option>
+                        <option value="2025">2025年度</option>
+                        <option value="2026">2026年度</option>
+                        <option value="2027">2027年度</option>
+                        <option value="2028">2028年度</option>
+                        <option value="2029">2029年度</option>
+                    </select>
+                </div>
+                <div>
+                    <label>表示する月を選択:</label>
+                    <select id="month-select">
+                        <option value="4">4月</option>
+                        <option value="5">5月</option>
+                        <option value="6">6月</option>
+                        <option value="7">7月</option>
+                        <option value="8">8月</option>
+                        <option value="9">9月</option>
+                        <option value="10">10月</option>
+                        <option value="11">11月</option>
+                        <option value="12">12月</option>
+                        <option value="1">1月</option>
+                        <option value="2">2月</option>
+                        <option value="3">3月</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="report-actions">
+                <button id="export-data">データエクスポート</button>
+                <button id="export-excel">Excel形式エクスポート</button>
+                <button id="import-data">データインポート</button>
+                <input type="file" id="import-file" style="display: none;">
+            </div>
+            
+            <table class="report-table" id="monthly-table">
+                <thead>
+                    <tr>
+                        <th>日付</th>
+                        <th>天候</th>
+                        <th>駐車場台数</th>
+                        <th>来館者数</th>
+                        <th>管理項目</th>
+                        <th>自主事業</th>
+                        <th>団体</th>
+                        <th>その他</th>
+                        <th>管理者</th>
+                    </tr>
+                </thead>
+                <tbody id="report-data">
+                    <!-- レポートデータがここに挿入されます -->
+                </tbody>
+                <tfoot>
+                    <tr>
+                        <td>合計</td>
+                        <td>-</td>
+                        <td id="total-parking">0</td>
+                        <td id="total-visitors">0</td>
+                        <td colspan="5"></td>
+                    </tr>
+                </tfoot>
+            </table>
+            
+            <div class="summary-section">
+                <h3>月間サマリー</h3>
+                <div class="summary-boxes">
+                    <div class="summary-box">
+                        <h4>来館者情報</h4>
+                        <p>総来館者数: <span id="total-visitors-summary">0</span>名</p>
+                        <p>平均来館者数: <span id="avg-visitors">0</span>名/日</p>
+                        <p>最大来館者数: <span id="max-visitors">0</span>名 (<span id="max-visitors-date">-</span>)</p>
+                    </div>
+                    <div class="summary-box">
+                        <h4>自主事業・団体利用</h4>
+                        <p>自主事業実施回数: <span id="total-events">0</span>回</p>
+                        <p>自主事業参加者数: <span id="total-participants">0</span>名</p>
+                        <p>団体利用数: <span id="total-groups">0</span>団体 (<span id="total-group-visitors">0</span>名)</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 設定タブ -->
+        <div class="tab-content" id="tab-settings">
+            <h2>来館者数計算設定</h2>
+            
+            <div class="form-group">
+                <label>平日の倍率設定:</label>
+                <input type="number" id="weekday-multiplier" value="2.5" step="0.1" min="0">
+                <div style="margin-top: 5px; font-size: 0.85em; color: #666;">
+                    (駐車場1台あたりの平均来館者数。標準は2.5人)
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label>休祝日の倍率設定:</label>
+                <input type="number" id="holiday-multiplier" value="3.0" step="0.1" min="0">
+                <div style="margin-top: 5px; font-size: 0.85em; color: #666;">
+                    (駐車場1台あたりの平均来館者数。標準は3.0人)
+                </div>
+            </div>
+            
+            <button type="button" id="save-settings">設定を保存</button>
+            <div id="settings-message" class="success-message" style="display: none;"></div>
+            
+            <div class="calculator-test">
+                <h3>計算テスト</h3>
+                <p>以下で倍率設定の効果を確認できます</p>
+                
+                <div class="test-controls">
+                    <div>
+                        <label>駐車場台数:</label>
+                        <input type="number" id="test-parking" value="10" min="0">
+                    </div>
+                    <div>
+                        <label style="display: inline-flex; align-items: center;">
+                            <input type="checkbox" id="test-holiday"> 休祝日
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="test-result">
+                    <label>計算結果:</label>
+                    <span id="test-result">25人</span>
+                </div>
+                
+                <button type="button" id="calculate-test">計算する</button>
+            </div>
+
+            <div class="my-8 pt-6 border-t border-gray-300">
+                <h3 class="text-xl font-bold mb-4">アプリをダウンロード</h3>
+                <p class="mb-4">現在のアプリをHTMLファイルとしてダウンロードし、オフラインでも使用できます。</p>
+                <button id="download-app" class="bg-green-600 hover:bg-green-700 text-white font-bold py-2 px-4 rounded">
+                    HTMLファイルをダウンロード
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/xlsx/dist/xlsx.full.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // 設定の初期化
+            if (!localStorage.getItem('weekdayMultiplier')) {
+                localStorage.setItem('weekdayMultiplier', '2.5');
+            }
+            if (!localStorage.getItem('holidayMultiplier')) {
+                localStorage.setItem('holidayMultiplier', '3.0');
+            }
+            
+            // 設定値を表示
+            document.getElementById('weekday-multiplier').value = localStorage.getItem('weekdayMultiplier');
+            document.getElementById('holiday-multiplier').value = localStorage.getItem('holidayMultiplier');
+            
+            // 当日日付をデフォルト値として設定
+            const today = new Date();
+            const year = today.getFullYear();
+            const month = String(today.getMonth() + 1).padStart(2, '0');
+            const day = String(today.getDate()).padStart(2, '0');
+            const formattedDate = `${year}-${month}-${day}`;
+            document.getElementById('date').value = formattedDate;
+            
+            // 現在の年度と月を設定
+            const fiscalYear = today.getMonth() < 3 ? today.getFullYear() - 1 : today.getFullYear();
+            const fiscalMonth = today.getMonth() < 3 ? today.getMonth() + 10 : today.getMonth() - 2;
+            
+            const yearSelect = document.getElementById('year-select');
+            const monthSelect = document.getElementById('month-select');
+            
+            // 年度選択を現在の年度に設定
+            for (let i = 0; i < yearSelect.options.length; i++) {
+                if (parseInt(yearSelect.options[i].value) === fiscalYear) {
+                    yearSelect.selectedIndex = i;
+                    break;
+                }
+            }
+            
+            // 月選択を現在の月に設定
+            for (let i = 0; i < monthSelect.options.length; i++) {
+                if (parseInt(monthSelect.options[i].value) === fiscalMonth) {
+                    monthSelect.selectedIndex = i;
+                    break;
+                }
+            }
+            
+            // タブ切り替え
+            const tabs = document.querySelectorAll('.tab');
+            const tabContents = document.querySelectorAll('.tab-content');
+            
+            tabs.forEach(tab => {
+                tab.addEventListener('click', () => {
+                    const targetId = tab.getAttribute('data-tab');
+                    
+                    // タブの切り替え
+                    tabs.forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    
+                    // コンテンツの切り替え
+                    tabContents.forEach(content => {
+                        content.classList.remove('active');
+                        if (content.id === targetId) {
+                            content.classList.add('active');
+                        }
+                    });
+                    
+                    // 月間レポートタブが選択された場合、データを更新
+                    if (targetId === 'tab-monthly') {
+                        updateMonthlyReport();
+                    }
+                    
+                    // 設定タブが選択された場合、計算テストを更新
+                    if (targetId === 'tab-settings') {
+                        updateCalculationTest();
+                    }
+                });
+            });
+            
+            // 来館者数の自動計算
+            const parkingInput = document.getElementById('parking');
+            const holidayCheckbox = document.getElementById('holiday');
+            const visitorsInput = document.getElementById('visitors');
+            
+            function calculateVisitors() {
+                const parkingCount = parseInt(parkingInput.value) || 0;
+                const isHoliday = holidayCheckbox.checked;
+                
+                // 設定から倍率を取得
+                const weekdayMultiplier = parseFloat(localStorage.getItem('weekdayMultiplier')) || 2.5;
+                const holidayMultiplier = parseFloat(localStorage.getItem('holidayMultiplier')) || 3.0;
+                
+                // 倍率の適用
+                const multiplier = isHoliday ? holidayMultiplier : weekdayMultiplier;
+                const calculatedVisitors = Math.round(parkingCount * multiplier);
+                
+                visitorsInput.value = calculatedVisitors;
+            }
+            
+            parkingInput.addEventListener('input', calculateVisitors);
+            holidayCheckbox.addEventListener('change', calculateVisitors);
+            
+            // イベント追加ボタンのイベントリスナー
+            document.querySelector('.add-event').addEventListener('click', function() {
+                const eventsContainer = document.getElementById('events-container');
+                const newEventDiv = document.createElement('div');
+                newEventDiv.className = 'event-input';
+                
+                newEventDiv.innerHTML = `
+                    <input type="text" placeholder="事業内容" class="event-title">
+                    <input type="number" placeholder="参加人数" class="event-participants" min="0" style="width: 120px;">
+                    <button type="button" class="remove-btn">削除</button>
+                `;
+                
+                eventsContainer.appendChild(newEventDiv);
+                
+                // 削除ボタンにイベントリスナーを追加
+                newEventDiv.querySelector('.remove-btn').addEventListener('click', function() {
+                    eventsContainer.removeChild(newEventDiv);
+                });
+            });
+            
+            // 団体追加ボタンのイベントリスナー
+            document.querySelector('.add-group').addEventListener('click', function() {
+                const groupsContainer = document.getElementById('groups-container');
+                const newGroupDiv = document.createElement('div');
+                newGroupDiv.className = 'group-input';
+                
+                newGroupDiv.innerHTML = `
+                    <input type="text" placeholder="団体名称" class="group-name">
+                    <input type="number" placeholder="人数" class="group-count" min="0" style="width: 120px;">
+                    <button type="button" class="remove-btn">削除</button>
+                `;
+                
+                groupsContainer.appendChild(newGroupDiv);
+                
+                // 削除ボタンにイベントリスナーを追加
+                newGroupDiv.querySelector('.remove-btn').addEventListener('click', function() {
+                    groupsContainer.removeChild(newGroupDiv);
+                });
+            });
+            
+            // フォームのリセット関数
+            function resetDailyForm() {
+                // 日付を今日に設定
+                document.getElementById('date').value = formattedDate;
+                
+                // 天候をリセット
+                document.getElementById('weather').selectedIndex = 0;
+                
+                // 駐車場台数と来館者数をリセット
+                document.getElementById('parking').value = '';
+                document.getElementById('holiday').checked = false;
+                document.getElementById('visitors').value = '';
+                
+                // 施設管理チェック項目をすべてクリア
+                document.querySelectorAll('input[name="management"]').forEach(cb => {
+                    cb.checked = false;
+                    cb.parentElement.classList.remove('checkbox-error');
+                });
+                
+                // 任意項目をクリア
+                document.querySelectorAll('input[name="optional"]').forEach(cb => {
+                    cb.checked = false;
+                });
+                
+                // 自主事業をリセット - 最初の1つを残して他を削除
+                const eventsContainer = document.getElementById('events-container');
+                while (eventsContainer.children.length > 1) {
+                    eventsContainer.removeChild(eventsContainer.lastChild);
+                }
+                eventsContainer.querySelector('.event-title').value = '';
+                eventsContainer.querySelector('.event-participants').value = '';
+                
+                // 団体をリセット - 最初の1つを残して他を削除
+                const groupsContainer = document.getElementById('groups-container');
+                while (groupsContainer.children.length > 1) {
+                    groupsContainer.removeChild(groupsContainer.lastChild);
+                }
+                groupsContainer.querySelector('.group-name').value = '';
+                groupsContainer.querySelector('.group-count').value = '';
+                
+                // その他の項目をリセット
+                document.getElementById('notes').value = '';
+                document.getElementById('manager').value = '';
+                
+                // エラーメッセージをリセット
+                hideAllErrors();
+                document.getElementById('success-message').style.display = 'none';
+            }
+            
+            // 日報の保存
+            const saveButton = document.getElementById('save-daily');
+            const errorMessage = document.getElementById('error-message');
+            const successMessage = document.getElementById('success-message');
+            
+            // 必須項目のエラーメッセージ要素
+            const dateError = document.getElementById('date-error');
+            const weatherError = document.getElementById('weather-error');
+            const visitorsError = document.getElementById('visitors-error');
+            const managementError = document.getElementById('management-error');
+            const managerError = document.getElementById('manager-error');
+            
+            // エラーメッセージを全て非表示にする関数
+            function hideAllErrors() {
+                dateError.style.display = 'none';
+                weatherError.style.display = 'none';
+                visitorsError.style.display = 'none';
+                managementError.style.display = 'none';
+                managerError.style.display = 'none';
+                errorMessage.style.display = 'none';
+            }
+            
+            saveButton.addEventListener('click', function() {
+                // バリデーション前にエラーメッセージをクリア
+                hideAllErrors();
+                
+                // 必須項目のチェック
+                let hasError = false;
+                
+                // 日付のチェック
+                const dateInput = document.getElementById('date');
+                if (!dateInput.value) {
+                    dateError.style.display = 'block';
+                    dateInput.classList.add('validation-error');
+                    hasError = true;
+                } else {
+                    dateInput.classList.remove('validation-error');
+                }
+                
+                // 天候のチェック
+                const weatherSelect = document.getElementById('weather');
+                if (!weatherSelect.value) {
+                    weatherError.style.display = 'block';
+                    weatherSelect.classList.add('validation-error');
+                    hasError = true;
+                } else {
+                    weatherSelect.classList.remove('validation-error');
+                }
+                
+                // 来館者数のチェック
+                if (!visitorsInput.value) {
+                    visitorsError.style.display = 'block';
+                    visitorsInput.classList.add('validation-error');
+                    hasError = true;
+                } else {
+                    visitorsInput.classList.remove('validation-error');
+                }
+                
+                // 施設管理チェック項目のチェック - すべてが選択されているか確認
+                const managementCheckboxes = document.querySelectorAll('input[name="management"]');
+                const allChecked = Array.from(managementCheckboxes).every(cb => cb.checked);
+                
+                if (!allChecked) {
+                    managementError.style.display = 'block';
+                    managementCheckboxes.forEach(cb => {
+                        if (!cb.checked) {
+                            cb.parentElement.classList.add('checkbox-error');
+                        } else {
+                            cb.parentElement.classList.remove('checkbox-error');
+                        }
+                    });
+                    hasError = true;
+                } else {
+                    managementCheckboxes.forEach(cb => {
+                        cb.parentElement.classList.remove('checkbox-error');
+                    });
+                }
+                
+                // 当日管理者のチェック
+                const managerInput = document.getElementById('manager');
+                if (!managerInput.value) {
+                    managerError.style.display = 'block';
+                    managerInput.classList.add('validation-error');
+                    hasError = true;
+                } else {
+                    managerInput.classList.remove('validation-error');
+                }
+                
+                // エラーがある場合は保存しない
+                if (hasError) {
+                    errorMessage.innerHTML = '必須項目を入力してください';
+                    errorMessage.style.display = 'block';
+                    successMessage.style.display = 'none';
+                    return;
+                }
+                
+                // データの収集
+                const date = dateInput.value;
+                const weather = weatherSelect.value;
+                const parking = parseInt(parkingInput.value) || 0;
+                const isHoliday = holidayCheckbox.checked;
+                const visitors = parseInt(visitorsInput.value) || 0;
+                
+                // 施設管理チェック項目
+                const managementItems = Array.from(managementCheckboxes)
+                    .filter(cb => cb.checked)
+                    .map(cb => cb.value);
+                const optionalItems = Array.from(document.querySelectorAll('input[name="optional"]:checked'))
+                    .map(cb => cb.value);
+                
+                // イベント情報の収集
+                const events = [];
+                document.querySelectorAll('.event-input').forEach(eventDiv => {
+                    const title = eventDiv.querySelector('.event-title').value;
+                    const participants = parseInt(eventDiv.querySelector('.event-participants').value) || 0;
+                    if (title || participants > 0) {
+                        events.push({ title, participants });
+                    }
+                });
+                
+                // 団体情報の収集
+                const groups = [];
+                document.querySelectorAll('.group-input').forEach(groupDiv => {
+                    const name = groupDiv.querySelector('.group-name').value;
+                    const count = parseInt(groupDiv.querySelector('.group-count').value) || 0;
+                    if (name || count > 0) {
+                        groups.push({ name, count });
+                    }
+                });
+                
+                const notes = document.getElementById('notes').value;
+                const manager = managerInput.value;
+                
+                // データを保存
+                const reportData = {
+                    date,
+                    weather,
+                    parking,
+                    isHoliday,
+                    visitors,
+                    managementItems,
+                    optionalItems,
+                    events,
+                    groups,
+                    notes,
+                    manager
+                };
+                
+                // ローカルストレージからデータを取得または初期化
+                let savedReports = JSON.parse(localStorage.getItem('facilityReports')) || [];
+                
+                // 同じ日付のデータがあれば更新、なければ追加
+                const existingIndex = savedReports.findIndex(report => report.date === date);
+                if (existingIndex >= 0) {
+                    savedReports[existingIndex] = reportData;
+                } else {
+                    savedReports.push(reportData);
+                }
+                
+                // ローカルストレージに保存
+                localStorage.setItem('facilityReports', JSON.stringify(savedReports));
+                
+                // 成功メッセージを表示
+                successMessage.innerHTML = 'データを保存しました';
+                successMessage.style.display = 'block';
+                
+                // フォームをリセット
+                resetDailyForm();
+            });
+            
+            // 月間レポートの更新
+            function updateMonthlyReport() {
+                const yearSelect = document.getElementById('year-select');
+                const monthSelect = document.getElementById('month-select');
+                
+                const selectedYear = parseInt(yearSelect.value);
+                const selectedMonth = parseInt(monthSelect.value);
+                
+                // 選択された年度の月のデータを取得
+                // 年度計算（4月〜翌年3月を1年度とする）
+                const startYear = selectedMonth >= 4 ? selectedYear : selectedYear - 1;
+                const endYear = selectedMonth >= 4 ? selectedYear : selectedYear;
+                
+                let startDate, endDate;
+                if (selectedMonth >= 4) {
+                    // 4月〜12月の場合
+                    startDate = `${startYear}-${String(selectedMonth).padStart(2, '0')}-01`;
+                    const lastDay = new Date(startYear, selectedMonth, 0).getDate();
+                    endDate = `${startYear}-${String(selectedMonth).padStart(2, '0')}-${lastDay}`;
+                } else {
+                    // 1月〜3月の場合（翌年）
+                    startDate = `${endYear}-${String(selectedMonth).padStart(2, '0')}-01`;
+                    const lastDay = new Date(endYear, selectedMonth, 0).getDate();
+                    endDate = `${endYear}-${String(selectedMonth).padStart(2, '0')}-${lastDay}`;
+                }
+                
+                const savedReports = JSON.parse(localStorage.getItem('facilityReports')) || [];
+                
+                // 選択された月のデータをフィルタリング
+                const monthlyReports = savedReports.filter(report => {
+                    const reportDate = new Date(report.date);
+                    return report.date >= startDate && report.date <= endDate;
+                });
+                
+                // 日付でソート
+                monthlyReports.sort((a, b) => new Date(a.date) - new Date(b.date));
+                
+                // テーブルにデータを表示
+                const tableBody = document.getElementById('report-data');
+                tableBody.innerHTML = '';
+                
+                let totalParking = 0;
+                let totalVisitors = 0;
+                let maxVisitors = 0;
+                let maxVisitorsDate = '';
+                let totalEvents = 0;
+                let totalParticipants = 0;
+                let totalGroups = 0;
+                let totalGroupVisitors = 0;
+                
+                monthlyReports.forEach(report => {
+                    const row = document.createElement('tr');
+                    
+                    // 日付を整形（yyyy-mm-dd → yyyy年mm月dd日）
+                    const dateObj = new Date(report.date);
+                    const formattedDate = `${dateObj.getFullYear()}年${dateObj.getMonth()+1}月${dateObj.getDate()}日`;
+                    
+                    // 管理項目を整形
+                    const managementText = [...report.managementItems, ...report.optionalItems].join(', ');
+                    
+                    // イベント情報を整形
+                    const eventTexts = report.events.map(event => 
+                        `${event.title}（${event.participants}名）`
+                    );
+                    const eventText = eventTexts.join('、 ');
+                    
+                    // 団体情報を整形
+                    const groupTexts = report.groups.map(group => 
+                        `${group.name}（${group.count}名）`
+                    );
+                    const groupText = groupTexts.join('、 ');
+                    
+                    row.innerHTML = `
+                        <td>${formattedDate}</td>
+                        <td>${report.weather}</td>
+                        <td>${report.parking}</td>
+                        <td>${report.visitors}</td>
+                        <td>${managementText}</td>
+                        <td>${eventText}</td>
+                        <td>${groupText}</td>
+                        <td>${report.notes}</td>
+                        <td>${report.manager}</td>
+                    `;
+                    
+                    tableBody.appendChild(row);
+                    
+                    // 集計
+                    totalParking += report.parking;
+                    totalVisitors += report.visitors;
+                    
+                    // 最大来館者数を更新
+                    if (report.visitors > maxVisitors) {
+                        maxVisitors = report.visitors;
+                        maxVisitorsDate = formattedDate;
+                    }
+                    
+                    // イベント集計
+                    totalEvents += report.events.length;
+                    report.events.forEach(event => {
+                        totalParticipants += event.participants;
+                    });
+                    
+                    // 団体集計
+                    totalGroups += report.groups.length;
+                    report.groups.forEach(group => {
+                        totalGroupVisitors += group.count;
+                    });
+                });
+                
+                // 合計を表示
+                document.getElementById('total-parking').textContent = totalParking;
+                document.getElementById('total-visitors').textContent = totalVisitors;
+                
+                // サマリー情報を更新
+                document.getElementById('total-visitors-summary').textContent = totalVisitors;
+                
+                const avgVisitors = monthlyReports.length > 0 ? Math.round(totalVisitors / monthlyReports.length) : 0;
+                document.getElementById('avg-visitors').textContent = avgVisitors;
+                
+                document.getElementById('max-visitors').textContent = maxVisitors;
+                document.getElementById('max-visitors-date').textContent = maxVisitorsDate;
+                
+                document.getElementById('total-events').textContent = totalEvents;
+                document.getElementById('total-participants').textContent = totalParticipants;
+                
+                document.getElementById('total-groups').textContent = totalGroups;
+                document.getElementById('total-group-visitors').textContent = totalGroupVisitors;
+            }
+            
+            // 設定の保存
+            document.getElementById('save-settings').addEventListener('click', function() {
+                const weekdayMultiplier = document.getElementById('weekday-multiplier').value;
+                const holidayMultiplier = document.getElementById('holiday-multiplier').value;
+                
+                localStorage.setItem('weekdayMultiplier', weekdayMultiplier);
+                localStorage.setItem('holidayMultiplier', holidayMultiplier);
+                
+                const settingsMessage = document.getElementById('settings-message');
+                settingsMessage.innerHTML = '設定を保存しました';
+                settingsMessage.style.display = 'block';
+                
+                // 3秒後にメッセージを消す
+                setTimeout(() => {
+                    settingsMessage.style.display = 'none';
+                }, 3000);
+                
+                // 計算テストを更新
+                updateCalculationTest();
+            });
+            
+            // 計算テストの更新
+            function updateCalculationTest() {
+                const testParking = document.getElementById('test-parking').value;
+                const testHoliday = document.getElementById('test-holiday').checked;
+                
+                const weekdayMultiplier = parseFloat(localStorage.getItem('weekdayMultiplier')) || 2.5;
+                const holidayMultiplier = parseFloat(localStorage.getItem('holidayMultiplier')) || 3.0;
+                
+                const multiplier = testHoliday ? holidayMultiplier : weekdayMultiplier;
+                const calculatedVisitors = Math.round(testParking * multiplier);
+                
+                document.getElementById('test-result').textContent = `${calculatedVisitors}人`;
+            }
+            
+            // 計算テストボタンのイベントリスナー
+            document.getElementById('calculate-test').addEventListener('click', updateCalculationTest);
+            
+            // テスト入力の変更イベントリスナー
+            document.getElementById('test-parking').addEventListener('input', updateCalculationTest);
+            document.getElementById('test-holiday').addEventListener('change', updateCalculationTest);
+            
+            // データのエクスポート
+            document.getElementById('export-data').addEventListener('click', function() {
+                const savedReports = JSON.parse(localStorage.getItem('facilityReports')) || [];
+                
+                if (savedReports.length === 0) {
+                    alert('エクスポートするデータがありません');
+                    return;
+                }
+                
+                const dataStr = JSON.stringify(savedReports, null, 2);
+                const dataBlob = new Blob([dataStr], { type: 'application/json' });
+                const url = URL.createObjectURL(dataBlob);
+                
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = 'facility_reports_export.json';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+            
+            // データのインポート
+            document.getElementById('import-data').addEventListener('click', function() {
+                const fileInput = document.getElementById('import-file');
+                fileInput.click();
+            });
+            
+            document.getElementById('import-file').addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+                
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const importedData = JSON.parse(e.target.result);
+                        
+                        if (!Array.isArray(importedData)) {
+                            throw new Error('データ形式が正しくありません');
+                        }
+                        
+                        // ローカルストレージに保存
+                        localStorage.setItem('facilityReports', JSON.stringify(importedData));
+                        
+                        // 月間レポートを更新
+                        updateMonthlyReport();
+                        
+                        alert('データを正常にインポートしました');
+                    } catch (error) {
+                        console.error('インポートエラー:', error);
+                        alert('データのインポートに失敗しました: ' + error.message);
+                    }
+                    
+                    // ファイル入力をリセット
+                    e.target.value = '';
+                };
+                reader.readAsText(file);
+            });
+            
+            // Excel形式のエクスポート
+            document.getElementById('export-excel').addEventListener('click', function() {
+                const yearSelect = document.getElementById('year-select');
+                const monthSelect = document.getElementById('month-select');
+                
+                const selectedYear = parseInt(yearSelect.value);
+                const selectedMonth = parseInt(monthSelect.value);
+                
+                // 月名を取得
+                const monthNames = ["１月", "２月", "３月", "４月", "５月", "６月", "７月", "８月", "９月", "１０月", "１１月", "１２月"];
+                const displayMonth = monthNames[selectedMonth - 1];
+                
+                // 年度表記（4月〜翌年3月を1年度とする）
+                const fiscalYear = selectedMonth >= 4 ? selectedYear : selectedYear - 1;
+                
+                const savedReports = JSON.parse(localStorage.getItem('facilityReports')) || [];
+                
+                // 選択された年度の月のデータを取得
+                let startDate, endDate;
+                if (selectedMonth >= 4) {
+                    // 4月〜12月の場合
+                    startDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
+                    const lastDay = new Date(selectedYear, selectedMonth, 0).getDate();
+                    endDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${lastDay}`;
+                } else {
+                    // 1月〜3月の場合（翌年）
+                    startDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-01`;
+                    const lastDay = new Date(selectedYear, selectedMonth, 0).getDate();
+                    endDate = `${selectedYear}-${String(selectedMonth).padStart(2, '0')}-${lastDay}`;
+                }
+                
+                // 選択された月のデータをフィルタリング
+                const monthlyReports = savedReports.filter(report => {
+                    return report.date >= startDate && report.date <= endDate;
+                });
+                
+                // 日付でソート
+                monthlyReports.sort((a, b) => new Date(a.date) - new Date(b.date));
+                
+                if (monthlyReports.length === 0) {
+                    alert('エクスポートするデータがありません');
+                    return;
+                }
+                
+                // ワークブックとワークシートを作成
+                const wb = XLSX.utils.book_new();
+                
+                // エクスポートするデータを準備
+                const wsData = [];
+                
+                // ヘッダー行
+                wsData.push([
+                    '日付', '天候', '駐車場台数', '来館者数', '管理項目', '自主事業', '団体', 'その他', '管理者'
+                ]);
+                
+                let totalParking = 0;
+                let totalVisitors = 0;
+                let totalEventParticipants = 0;
+                let totalGroupVisitors = 0;
+                
+                // レポートデータ
+                monthlyReports.forEach(report => {
+                    // 日付を整形
+                    const dateObj = new Date(report.date);
+                    const formattedDate = `${dateObj.getFullYear()}/${dateObj.getMonth()+1}/${dateObj.getDate()}`;
+                    
+                    // 管理項目を整形
+                    const managementText = [...report.managementItems, ...report.optionalItems].join(', ');
+                    
+                    // イベント情報を整形
+                    const eventTexts = report.events.map(event => 
+                        `${event.title}（${event.participants}名）`
+                    );
+                    const eventText = eventTexts.join('、 ');
+                    
+                    // イベント参加者数の集計
+                    let eventParticipants = 0;
+                    report.events.forEach(event => {
+                        eventParticipants += event.participants;
+                    });
+                    totalEventParticipants += eventParticipants;
+                    
+                    // 団体情報を整形
+                    const groupTexts = report.groups.map(group => 
+                        `${group.name}（${group.count}名）`
+                    );
+                    const groupText = groupTexts.join('、 ');
+                    
+                    // 団体訪問者数の集計
+                    let groupVisitors = 0;
+                    report.groups.forEach(group => {
+                        groupVisitors += group.count;
+                    });
+                    totalGroupVisitors += groupVisitors;
+                    
+                    wsData.push([
+                        formattedDate,
+                        report.weather,
+                        report.parking,
+                        report.visitors,
+                        managementText,
+                        eventText,
+                        groupText,
+                        report.notes,
+                        report.manager
+                    ]);
+                    
+                    totalParking += report.parking;
+                    totalVisitors += report.visitors;
+                });
+                
+                // 合計行を追加
+                wsData.push([
+                    '合計', '-', totalParking, totalVisitors, '-', `参加者計: ${totalEventParticipants}名`, `利用者計: ${totalGroupVisitors}名`, '-', '-'
+                ]);
+                
+                // ワークシートを作成
+                const ws = XLSX.utils.aoa_to_sheet(wsData);
+                
+                // ワークブックに追加
+                XLSX.utils.book_append_sheet(wb, ws, `${fiscalYear}年度${displayMonth}`);
+                
+                // Excelファイルとして保存
+                XLSX.writeFile(wb, `施設日報_${fiscalYear}年度${displayMonth}.xlsx`);
+            });
+            
+            // HTMLファイルをダウンロードする機能
+            document.getElementById('download-app').addEventListener('click', function() {
+                const htmlContent = document.documentElement.outerHTML;
+                const blob = new Blob([htmlContent], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = '施設日報アプリ.html';
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+            });
+            
+            // 初期表示時に計算テストを更新
+            updateCalculationTest();
+            
+            // 月次レポートを現在の月に更新
+            yearSelect.addEventListener('change', updateMonthlyReport);
+            monthSelect.addEventListener('change', updateMonthlyReport);
+            
+            // 初期表示時に月次レポートを更新
+            updateMonthlyReport();
+        });
+    </script>
+</body>
+</html>
+    <script id="html_badge_script1">
+        window.__genspark_remove_badge_link = "https://www.genspark.ai/api/html_badge/" +
+            "remove_badge?token=To%2FBnjzloZ3UfQdcSaYfDsz6pVMlu4bhWX%2BKDxnGr1LaxkYS6gpD%2Byrd1x3l9PQQ6H4nPGUFHF10r6VzmWeRXkUTfBlIFtPim0TgwdAednEBK%2BqvEbsILjh1%2FaApSAEGUcQW8tunY4JQ%2B1%2BHZRkwUZ616fLXFYcmFVu2arvG8VwG9uUOuSq%2B6wDWQVkZNR%2B5jIX0PLCd1C0oBiFkb3eWz0lc8cuNBkFYgKH6xV%2BAQgOO6E%2BdRSofaIm%2BzYbfJKqxprk87MV1lIqo0ymE%2BgufSNgWwfSiLGlizneod60knHdRW4s2GaOy90i0l1p5D1vShXhnoJVh6jZwQNgSOS7vzpz7GaMOehNESTeHBWeqJ%2BP56ePQ8lJWOVEeESvgfEHJ2UsC6FDySR13s9H6IQEiglK1gUYYtsq9q1DwJ0HTYvtrld1FNw%2BmAlDDY979FQPoGFV8xomvYf2k5ybsGnHmpk1IlMhyG60JXFzD9UbSYwYc9LN475WWGenMFmbpOH45ZluNd4AZAAY%2FGcs9J6MnuG2Bo9hZhZ2ReBEBVdUwSWM%3D";
+        window.__genspark_locale = "ja-JP";
+        window.__genspark_token = "To/BnjzloZ3UfQdcSaYfDsz6pVMlu4bhWX+KDxnGr1LaxkYS6gpD+yrd1x3l9PQQ6H4nPGUFHF10r6VzmWeRXkUTfBlIFtPim0TgwdAednEBK+qvEbsILjh1/aApSAEGUcQW8tunY4JQ+1+HZRkwUZ616fLXFYcmFVu2arvG8VwG9uUOuSq+6wDWQVkZNR+5jIX0PLCd1C0oBiFkb3eWz0lc8cuNBkFYgKH6xV+AQgOO6E+dRSofaIm+zYbfJKqxprk87MV1lIqo0ymE+gufSNgWwfSiLGlizneod60knHdRW4s2GaOy90i0l1p5D1vShXhnoJVh6jZwQNgSOS7vzpz7GaMOehNESTeHBWeqJ+P56ePQ8lJWOVEeESvgfEHJ2UsC6FDySR13s9H6IQEiglK1gUYYtsq9q1DwJ0HTYvtrld1FNw+mAlDDY979FQPoGFV8xomvYf2k5ybsGnHmpk1IlMhyG60JXFzD9UbSYwYc9LN475WWGenMFmbpOH45ZluNd4AZAAY/Gcs9J6MnuG2Bo9hZhZ2ReBEBVdUwSWM=";
+    </script>
+    
